@@ -13,7 +13,7 @@ class SeedFromJSONProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->make('bluekachina\seedfromjson\SeedFromJSON.php');
+        //$this->app->make('bluekachina\seedfromjson\SeedFromJSON.php');
     }
 
     /**
