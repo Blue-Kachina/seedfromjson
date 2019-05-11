@@ -15,6 +15,13 @@
     "require": {
         "php": ">=7.0.0"
     },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "bluekachina\\seedfromjson\\SeedFromJSONProvider"
+            ]
+        }
+    },
     "autoload": {
         "psr-0": {
             "bluekachina\\seedfromjson\\": "src/"
