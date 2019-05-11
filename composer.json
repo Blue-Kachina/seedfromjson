@@ -1,0 +1,23 @@
+{
+    "name": "bluekachina/seedfromjson",
+    "description": "Simplifies and standardizes seeding from JSON files named to match the table they will be populating",
+    "keywords": ["seed","json","laravel"],
+    "homepage": "https://github.com/Blue-Kachina/seedfromjson",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Matt Leering",
+            "email": "mleering@coresolutions.ca",
+            "homepage": "http://coresolutions.ca",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=7.0.0"
+    },
+    "autoload": {
+        "psr-0": {
+            "bluekachina\\seedfromjson\\": "src/"
+        }
+    }
+}
