@@ -50,7 +50,7 @@ class SeedFromJSON
     }
 
     //Call this function from the DatabaseSeeder in order to instruct handling of a particular model
-    protected function addModelToSeedingQueue($model, $options = 0, $callback_pre = null, $callback_post = null)
+    public function addModelToSeedingQueue($model, $options = 0, $callback_pre = null, $callback_post = null)
     {
         $instance = new $model;
 
@@ -73,7 +73,7 @@ class SeedFromJSON
     }
 
     //This will initiate the seeding process for all of the items that have been added to queue via addModelToSeedingQueue() function calls
-    protected function beginSeeding()
+    public function beginSeeding()
     {
 
         $this->drawHeaderToConsole();
