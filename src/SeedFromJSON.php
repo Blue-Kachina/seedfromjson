@@ -9,9 +9,9 @@
 namespace bluekachina\seedfromjson;
 
 use DB;
+use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
-use Matrix\Exception;
 use Storage;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -117,7 +117,9 @@ class SeedFromJSON
                     }
 
                     //Actually Insert The Data
-                    $queueItem['instance']::insert($scrubbed_data);
+                    foreach (array_chunk($scrubbed_data, 1000) as $scrubbed_chunk_data) {
+                        $queueItem['instance']::insert($scrubbed_chunk_data);
+                    }
                     //
 
                     //ToDo: Callbacks are not yet functional
