@@ -14,7 +14,8 @@
     ],
     "require": {
         "php": ">=7.0.0",
-      "ext-json": "*"
+      "ext-json": "*",
+        "halaxa/json-machine": "^1.1"
     },
     "extra": {
         "laravel": {

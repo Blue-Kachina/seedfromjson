@@ -12,6 +12,8 @@ use DB;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
+use JsonMachine\Items;
+use JsonMachine\JsonDecoder\ExtJsonDecoder;
 use Storage;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Output\ConsoleOutput;
@@ -98,7 +100,8 @@ class SeedFromJSON
 
             if ($this->_storage->exists($queueItem['filename'])) {
                 $file = $this->_storage->get($queueItem['filename']);
-                $data = json_decode($file, true);
+                $file_path = Storage::disk(STORAGE_FOLDER_NAME)->path($queueItem['filename']);
+                $data = Items::fromFile($file_path, ['decoder' => new ExtJsonDecoder(true)]);
                 $scrubbed_data = $this->prepDataForImport($queueItem, $data);
 
                 try {
@@ -117,7 +120,7 @@ class SeedFromJSON
                     }
 
                     //Actually Insert The Data
-                    foreach (array_chunk($scrubbed_data, 1000) as $scrubbed_chunk_data) {
+                    foreach ($scrubbed_data as $scrubbed_chunk_data) {
                         $queueItem['instance']::insert($scrubbed_chunk_data);
                     }
                     //
