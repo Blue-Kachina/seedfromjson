@@ -141,7 +141,8 @@ class SeedFromJSON
 
                     $this->writeToScreen("SUCCESS", "success");
                 } catch (Exception $e) {
-                    $this->writeToScreen(array("FAILURE", "Unable To Insert Data"), "warning");
+                    $msg_e = $e->getMessage();
+                    $this->writeToScreen(array("FAILURE", "Unable To Insert Data - $msg_e"), "warning");
                     die();
                 }
             } else {
