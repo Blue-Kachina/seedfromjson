@@ -18,16 +18,18 @@ use Storage;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
-//STORAGE_FOLDER_NAME is EDITABLE -- It represents the directory name where you will be storing JSON source files
+// STORAGE_FOLDER_NAME is EDITABLE -- It represents the directory name where you will be storing JSON source files
 define('STORAGE_FOLDER_NAME', 'seed_content');
+define('NUM_QUICK_RECORDS', 100);
 
-//These are options.  You can use these constants (bitwise), so that multiple options can be used simultaneously
-define('OPT_TRUNCATE_TABLE', 1);         //Determines whether or not to truncate the table connected to the model provided
-define('OPT_IMPORT_DATA', 2);         //Determines if JSON file (filename matches tablename) is to be imported from
-define('OPT_SKIP_PK', 4);         //Determines if the PK field's value is to be preserved
-define('OPT_DISABLE_FK_CONSTRAINTS', 8);         //Determines if foreign key constraints should be disabled prior to importing JSON data
-define('OPT_NO_SEED_IN_PROD', 16);        //Determines if table is to be populated in a development environment only
-define('OPT_NO_TRUNCATE_IN_PROD', 32);        //Determines if table is to be truncated in a development environment only
+// These are options.  You can use these constants (bitwise), so that multiple options can be used simultaneously
+define('OPT_TRUNCATE_TABLE', 1);                // Determines whether or not to truncate the table connected to the model provided
+define('OPT_IMPORT_DATA', 2);                   // Determines if JSON file (filename matches tablename) is to be imported from
+define('OPT_SKIP_PK', 4);                       // Determines if the PK field's value is to be preserved
+define('OPT_DISABLE_FK_CONSTRAINTS', 8);        // Determines if foreign key constraints should be disabled prior to importing JSON data
+define('OPT_NO_SEED_IN_PROD', 16);              // Determines if table is to be populated in a development environment only
+define('OPT_NO_TRUNCATE_IN_PROD', 32);          // Determines if table is to be truncated in a development environment only
+define('OPT_ALWAYS_FULL_SEED', 64);             // Determines if table is to be fully seeded -- even if running a quick seed
 
 class SeedFromJSON
 {
@@ -41,17 +43,17 @@ class SeedFromJSON
      */
     public function __construct()
     {
-        //Initialize properties to be used by trait methods
-        $this->_seedingQueue = [];                  //This is the array that we'll be putting queued jobs into
-        $this->_output = new ConsoleOutput();       //This is our output
+        // Initialize properties to be used by trait methods
+        $this->_seedingQueue = [];                  // This is the array that we'll be putting queued jobs into
+        $this->_output = new ConsoleOutput();       // This is our output
 
-        //Configure a storage object
-        $this->_storage = Storage::disk(STORAGE_FOLDER_NAME);   //This is a storage container pointing to the directory where the JSON files reside
+        // Configure a storage object
+        $this->_storage = Storage::disk(STORAGE_FOLDER_NAME);   // This is a storage container pointing to the directory where the JSON files reside
 
-        $this->enableScreenStyles();                //This configures a few styles for us to use when outputting to the screen
+        $this->enableScreenStyles();                // This configures a few styles for us to use when outputting to the screen
     }
 
-    //Call this function from the DatabaseSeeder in order to instruct handling of a particular model
+    // Call this function from the DatabaseSeeder in order to instruct handling of a particular model
     public function addModelToSeedingQueue($model, $options = 0, $callback_pre = null, $callback_post = null)
     {
         $instance = new $model;
@@ -74,23 +76,23 @@ class SeedFromJSON
             ]);
     }
 
-    //This will initiate the seeding process for all of the items that have been added to queue via addModelToSeedingQueue() function calls
-    public function beginSeeding()
+    // This will initiate the seeding process for all of the items that have been added to queue via addModelToSeedingQueue() function calls
+    public function beginSeeding($quick=false)
     {
 
         $this->drawHeaderToConsole();
 
         foreach ($this->_seedingQueue as $i => $item) {
             $this->queueItem_Truncate($item);
-            $this->queueItem_Seed($item);
+            $this->queueItem_Seed($item, $quick);
         }
         $this->drawFooterToConsole();
     }
 
-    //This function will get invoked by the beginSeeding() function
-    private function queueItem_Seed($queueItem)
+    // This function will get invoked by the beginSeeding() function
+    private function queueItem_Seed($queueItem, $quick)
     {
-        $message = padStringWithDots("SEED:       {$queueItem['table']}");        //Whitespacing within the string is intentional so as to allow for a table-like appearance
+        $message = padStringWithDots("SEED:       {$queueItem['table']}");        // Whitespacing within the string is intentional so as to allow for a table-like appearance
         $this->_output->write($message);
         if (!$this->passesEnvironmentCheck($queueItem, OPT_NO_SEED_IN_PROD)) {
             $this->writeToScreen("SKIPPED", "warning");
@@ -109,7 +111,7 @@ class SeedFromJSON
                         Schema::disableForeignKeyConstraints();
                     }
 
-                    //ToDo: Callbacks are not yet functional
+                    // ToDo: Callbacks are not yet functional
                     if (isset($queueItem['callback_pre'])) {
                         try {
                             call_user_func($queueItem['callback_pre'], $scrubbed_data);
@@ -119,13 +121,15 @@ class SeedFromJSON
                         }
                     }
 
-                    //Actually Insert The Data
-                    foreach ($scrubbed_data as $scrubbed_chunk_data) {
-                        $queueItem['instance']::insert($scrubbed_chunk_data);
+                    // Actually Insert The Data
+                    foreach ($scrubbed_data as $scrubbed_chunk_data_index => $scrubbed_chunk_data) {
+                        if (!$quick || ($quick && $scrubbed_chunk_data_index <= NUM_QUICK_RECORDS) || isFlagSet($queueItem, OPT_ALWAYS_FULL_SEED)){
+                            $queueItem['instance']::insert($scrubbed_chunk_data);
+                        }
                     }
                     //
 
-                    //ToDo: Callbacks are not yet functional
+                    // ToDo: Callbacks are not yet functional
                     if (isset($queueItem['callback_post'])) {
                         try {
                             call_user_func($queueItem['callback_post'], $scrubbed_data);
@@ -154,7 +158,7 @@ class SeedFromJSON
         }
     }
 
-    //This function will get invoked by the beginSeeding() function
+    // This function will get invoked by the beginSeeding() function
     private function queueItem_Truncate($queueItem)
     {
         $message = padStringWithDots("TRUNCATE:   {$queueItem['table']}");
@@ -186,7 +190,7 @@ class SeedFromJSON
         return $test_passed;
     }
 
-    //This function will modify the data before it actually gets imported
+    // This function will modify the data before it actually gets imported
     private function prepDataForImport($queueItem, $data)
     {
         if (!isFlagSet($queueItem, OPT_SKIP_PK)) {
@@ -206,7 +210,7 @@ class SeedFromJSON
 
     private function enableScreenStyles()
     {
-        //Establish some styles to be used when outputting to console
+        // Establish some styles to be used when outputting to console
         $this->createScreenStyle('default', 'default');
         $this->createScreenStyle('success', 'green');
         $this->createScreenStyle('warning', 'red');
@@ -221,7 +225,7 @@ class SeedFromJSON
         $this->writeToScreen('      |  __/  __/ (   |  __| |   (   | |   |   |  \   |      | |   | |\  | ');
         $this->writeToScreen('_____/ \___|\___|\__,_| _|  _|  \___/ _|  _|  _| \___/ _____/ \___/ _| \_| ');
         $this->writeToScreen('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
-        //This ASCII art is complements of https://www.ascii-art-generator.org/ -- Pretty cool that this site lets you choose various fonts (I picked shadow)
+        // This ASCII art is complements of https://www.ascii-art-generator.org/ -- Pretty cool that this site lets you choose various fonts (I picked shadow)
         return null;
     }
 
