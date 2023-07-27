@@ -69,9 +69,9 @@ $seedFromJson->addModelToSeedingQueue(User::class, OPT_TRUNCATE_TABLE | OPT_IMPO
 $seedFromJson->beginSeeding();
 ``` 
 ## Quick Seeding
-The `beginSeeding($quick_seed = false)` accepts an optional boolean parameter.
-when provided with a truthy value, it will seed only a limited number of records.
-The number of records is determined by a configuration variable, and defaults to `100`
+Quick seeding can be enabled via config/env variable.
+When provided with a truthy value, it will seed only a limited number of records.
+The number of records is determined by another configuration variable, and defaults to `100`
 
 ## Options
 Many different options have been made available.  These can be specified on a table-by-table basis
