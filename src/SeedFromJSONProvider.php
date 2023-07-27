@@ -14,6 +14,8 @@ class SeedFromJSONProvider extends ServiceProvider
     public function register()
     {
         //$this->app->make('bluekachina\seedfromjson\SeedFromJSON.php');
+        $configPath = __DIR__ . '/config/seedfromjson.php';
+        $this->mergeConfigFrom($configPath, 'seedfromjson');
     }
 
     /**
@@ -26,8 +28,8 @@ class SeedFromJSONProvider extends ServiceProvider
 //        $this->loadRoutesFrom(__DIR__.'/routes.php');
 //        $this->loadMigrationsFrom(__DIR__.'/migrations');
 //        $this->loadViewsFrom(__DIR__.'/views', 'seedfromjson');
-//        $this->publishes([
-//            __DIR__.'/views' => base_path('resources/views/bluekachina/seedfromjson'),
-//        ]);
+        $this->publishes([
+            __DIR__.'/config/seedfromjson.php' => config_path('seedfromjson.php'),
+        ], 'config');
     }
 }

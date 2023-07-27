@@ -19,8 +19,8 @@ use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
 // STORAGE_FOLDER_NAME is EDITABLE -- It represents the directory name where you will be storing JSON source files
-define('STORAGE_FOLDER_NAME', 'seed_content');
-define('NUM_QUICK_RECORDS', 100);
+//define('STORAGE_FOLDER_NAME', 'seed_content');
+//define('NUM_QUICK_RECORDS', 100);
 
 // These are options.  You can use these constants (bitwise), so that multiple options can be used simultaneously
 define('OPT_TRUNCATE_TABLE', 1);                // Determines whether or not to truncate the table connected to the model provided
@@ -48,7 +48,7 @@ class SeedFromJSON
         $this->_output = new ConsoleOutput();       // This is our output
 
         // Configure a storage object
-        $this->_storage = Storage::disk(STORAGE_FOLDER_NAME);   // This is a storage container pointing to the directory where the JSON files reside
+        $this->_storage = Storage::disk(config('seedfromjson.STORAGE_FOLDER_NAME'));   // This is a storage container pointing to the directory where the JSON files reside
 
         $this->enableScreenStyles();                // This configures a few styles for us to use when outputting to the screen
     }
@@ -102,7 +102,7 @@ class SeedFromJSON
 
             if ($this->_storage->exists($queueItem['filename'])) {
                 $file = $this->_storage->get($queueItem['filename']);
-                $file_path = Storage::disk(STORAGE_FOLDER_NAME)->path($queueItem['filename']);
+                $file_path = Storage::disk(config('seedfromjson.STORAGE_FOLDER_NAME'))->path($queueItem['filename']);
                 $data = Items::fromFile($file_path, ['decoder' => new ExtJsonDecoder(true)]);
                 $scrubbed_data = $this->prepDataForImport($queueItem, $data);
 
@@ -123,7 +123,7 @@ class SeedFromJSON
 
                     // Actually Insert The Data
                     foreach ($scrubbed_data as $scrubbed_chunk_data_index => $scrubbed_chunk_data) {
-                        if (!$quick || ($quick && $scrubbed_chunk_data_index <= NUM_QUICK_RECORDS) || isFlagSet($queueItem, OPT_ALWAYS_FULL_SEED)){
+                        if (!$quick || ($quick && $scrubbed_chunk_data_index <= config('seedfromjson.NUM_QUICK_RECORDS')) || isFlagSet($queueItem, OPT_ALWAYS_FULL_SEED)){
                             $queueItem['instance']::insert($scrubbed_chunk_data);
                         }
                     }
