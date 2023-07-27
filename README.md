@@ -54,27 +54,35 @@ The name of the disk you create should match what is named within the config (de
 
 ## Examples
 This library is typically used in sandwich form.
-1) Create a new instance of the class
+### Step 1: Create a new instance of the class
 ```
 $seedFromJson = new \bluekachina\seedfromjson\SeedFromJSON();
 ```
 
-2) Queue up at least one model to be seeded 
+### Step 2: Populate your seeding queue 
+Often times your tables will need to be populated in a specific sequence. 
+Because of that, we make use of a queue so that you can still be in charge of that sequence.
+Simply add a new model to the seeding queue for each of the model/tables you want to populate
 ```
-$seedFromJson->addModelToSeedingQueue(User::class, OPT_TRUNCATE_TABLE | OPT_IMPORT_DATA | OPT_DISABLE_FK_CONSTRAINTS );
+$seedFromJson->addModelToSeedingQueue(User::class, OPT_TRUNCATE_TABLE | OPT_IMPORT_DATA );
 ```
+* *When importing data, the system will look for a JSON file named the same way the model's table is named*
 
-3) Begin seeding based on all the queued items that were just added
+### Step 3: Begin seeding 
+Seeding takes place based on all the queued items that were just added
 ```
 $seedFromJson->beginSeeding();
 ``` 
 ## Quick Seeding
-Quick seeding can be enabled via config/env variable.
-When provided with a truthy value, it will seed only a limited number of records.
-The number of records is determined by another configuration variable, and defaults to `100`
+Quick seeding is enabled via `config`/`env` variable. *See published config file*
+By.  By defaultg, quick seeding is enabled only in local environments
+
+When enabled, seeding imports a limited number of records (First **x** records from JSON).
+The number of records (**x**) is also determined by `config`/`env` variable, and defaults to `100`
 
 ## Options
-Many different options have been made available.  These can be specified on a table-by-table basis
+Many different options have been made available.  
+Each can be specified on a table-by-table basis, and since they're bitwise options, multiple can be used at a time (separated by `|`).
 ```
 OPT_TRUNCATE_TABLE          => Determines whether or not to truncate the table connected to the model provided
 OPT_IMPORT_DATA             => Determines if JSON file (filename matches tablename) is to be imported from
@@ -84,10 +92,3 @@ OPT_NO_SEED_IN_PROD         => Determines if table is to be populated in a devel
 OPT_NO_TRUNCATE_IN_PROD     => Determines if table is to be truncated in a development environment only
 OPT_ALWAYS_FULL_SEED        => Determines if table is to be fully seeded -- even if running a quick seed
 ```
-
-
-
-## License
-
-The SeedFromJSON library is open-sourced software licensed under the [MIT license](http://opensource.org/licenses/MIT)
-
