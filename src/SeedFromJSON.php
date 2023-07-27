@@ -18,10 +18,6 @@ use Storage;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
-// STORAGE_FOLDER_NAME is EDITABLE -- It represents the directory name where you will be storing JSON source files
-//define('STORAGE_FOLDER_NAME', 'seed_content');
-//define('NUM_QUICK_RECORDS', 100);
-
 // These are options.  You can use these constants (bitwise), so that multiple options can be used simultaneously
 define('OPT_TRUNCATE_TABLE', 1);                // Determines whether or not to truncate the table connected to the model provided
 define('OPT_IMPORT_DATA', 2);                   // Determines if JSON file (filename matches tablename) is to be imported from
@@ -33,7 +29,6 @@ define('OPT_ALWAYS_FULL_SEED', 64);             // Determines if table is to be 
 
 class SeedFromJSON
 {
-
     public $_seedingQueue;
     public $_output;
     public $_storage;
@@ -77,20 +72,26 @@ class SeedFromJSON
     }
 
     // This will initiate the seeding process for all of the items that have been added to queue via addModelToSeedingQueue() function calls
-    public function beginSeeding($quick=false)
+    public function beginSeeding()
     {
 
         $this->drawHeaderToConsole();
 
+        if (config('seedfromjson.DISABLE_ALL_FK_CONSTRAINTS')) {
+            Schema::disableForeignKeyConstraints();
+        }
         foreach ($this->_seedingQueue as $i => $item) {
             $this->queueItem_Truncate($item);
-            $this->queueItem_Seed($item, $quick);
+            $this->queueItem_Seed($item);
+        }
+        if (config('seedfromjson.DISABLE_ALL_FK_CONSTRAINTS')) {
+            Schema::enableForeignKeyConstraints();
         }
         $this->drawFooterToConsole();
     }
 
     // This function will get invoked by the beginSeeding() function
-    private function queueItem_Seed($queueItem, $quick)
+    private function queueItem_Seed($queueItem)
     {
         $message = padStringWithDots("SEED:       {$queueItem['table']}");        // Whitespacing within the string is intentional so as to allow for a table-like appearance
         $this->_output->write($message);
@@ -107,7 +108,7 @@ class SeedFromJSON
                 $scrubbed_data = $this->prepDataForImport($queueItem, $data);
 
                 try {
-                    if (isFlagSet($queueItem, OPT_DISABLE_FK_CONSTRAINTS)) {
+                    if (!config('seedfromjson.DISABLE_ALL_FK_CONSTRAINTS') && isFlagSet($queueItem, OPT_DISABLE_FK_CONSTRAINTS)) {
                         Schema::disableForeignKeyConstraints();
                     }
 
@@ -122,12 +123,12 @@ class SeedFromJSON
                     }
 
                     // Actually Insert The Data
+                    $quick = config('seedfromjson.ENABLE_QUICK_SEEDING');
                     foreach ($scrubbed_data as $scrubbed_chunk_data_index => $scrubbed_chunk_data) {
                         if (!$quick || ($quick && $scrubbed_chunk_data_index <= config('seedfromjson.NUM_QUICK_RECORDS')) || isFlagSet($queueItem, OPT_ALWAYS_FULL_SEED)){
                             $queueItem['instance']::insert($scrubbed_chunk_data);
                         }
                     }
-                    //
 
                     // ToDo: Callbacks are not yet functional
                     if (isset($queueItem['callback_post'])) {
@@ -139,7 +140,7 @@ class SeedFromJSON
                         }
                     }
 
-                    if (isFlagSet($queueItem, OPT_DISABLE_FK_CONSTRAINTS)) {
+                    if (!config('seedfromjson.DISABLE_ALL_FK_CONSTRAINTS') && isFlagSet($queueItem, OPT_DISABLE_FK_CONSTRAINTS)) {
                         Schema::enableForeignKeyConstraints();
                     }
 
