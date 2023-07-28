@@ -125,7 +125,7 @@ class SeedFromJSON
                     // Actually Insert The Data
                     $quick = config('seedfromjson.ENABLE_QUICK_SEEDING');
                     foreach ($scrubbed_data as $scrubbed_chunk_data_index => $scrubbed_chunk_data) {
-                        if (!$quick || ($quick && $scrubbed_chunk_data_index <= config('seedfromjson.NUM_QUICK_RECORDS')) || isFlagSet($queueItem, OPT_ALWAYS_FULL_SEED)){
+                        if (!$quick || ($quick && $scrubbed_chunk_data_index < config('seedfromjson.NUM_QUICK_RECORDS')) || isFlagSet($queueItem, OPT_ALWAYS_FULL_SEED)){
                             $queueItem['instance']::insert($scrubbed_chunk_data);
                         }
                     }
