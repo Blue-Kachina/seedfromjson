@@ -74,7 +74,7 @@ class SeedFromJSON
     // This will initiate the seeding process for all of the items that have been added to queue via addModelToSeedingQueue() function calls
     public function beginSeeding()
     {
-
+        $time_begin = hrtime(true);
         $this->drawHeaderToConsole();
 
         if (config('seedfromjson.DISABLE_ALL_FK_CONSTRAINTS')) {
@@ -87,7 +87,11 @@ class SeedFromJSON
         if (config('seedfromjson.DISABLE_ALL_FK_CONSTRAINTS')) {
             Schema::enableForeignKeyConstraints();
         }
-        $this->drawFooterToConsole();
+        $time_end = hrtime(true);
+        $eta = $time_end - $time_begin;
+        $eta_ms = $eta/1e+6;
+        $eta_s = $eta_ms / 1000;
+        $this->drawFooterToConsole($eta_s);
     }
 
     // This function will get invoked by the beginSeeding() function
@@ -209,6 +213,24 @@ class SeedFromJSON
         return $data;
     }
 
+    function formatSeconds( $seconds )
+    {
+        $hours = 0;
+        $milliseconds = str_replace( "0.", '', $seconds - floor( $seconds ) );
+
+        if ( $seconds > 3600 )
+        {
+            $hours = floor( $seconds / 3600 );
+        }
+        $seconds = $seconds % 3600;
+
+
+        return str_pad( $hours, 2, '0', STR_PAD_LEFT )
+            . gmdate( ':i:s', $seconds )
+            . ($milliseconds ? ".$milliseconds" : '')
+            ;
+    }
+
     private function enableScreenStyles()
     {
         // Establish some styles to be used when outputting to console
@@ -216,6 +238,15 @@ class SeedFromJSON
         $this->createScreenStyle('success', 'green');
         $this->createScreenStyle('warning', 'red');
         $this->createScreenStyle('warning', 'yellow');
+    }
+
+    private function drawRuntimeToConsole($time_in_seconds) {
+        if (!$time_in_seconds) {
+            return null;
+        }
+        $runtime_in_seconds = $this->formatSeconds($time_in_seconds);
+        $style = "success";
+        $this->_output->writeln("<{$style}>Runtime Duration:</{$style}> {$runtime_in_seconds}");
     }
 
     private function drawHeaderToConsole()
@@ -230,10 +261,11 @@ class SeedFromJSON
         return null;
     }
 
-    private function drawFooterToConsole()
+    private function drawFooterToConsole($time_in_seconds)
     {
         $this->writeToScreen('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
         $this->writeToScreen('SeedFromJSON Job Complete', 'success');
+        $this->drawRuntimeToConsole($time_in_seconds);
         $this->writeToScreen('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~');
         return null;
     }

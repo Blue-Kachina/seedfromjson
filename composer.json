@@ -7,13 +7,13 @@
     "authors": [
         {
             "name": "Matt Leering",
-            "email": "mleering@coresolutions.ca",
-            "homepage": "http://coresolutions.ca",
+            "email": "matt_leering@hotmail.com",
+            "homepage": "",
             "role": "Developer"
         }
     ],
     "require": {
-        "php": ">=7.0.0",
+        "php": ">=7.3.0",
       "ext-json": "*",
         "halaxa/json-machine": "^1.1"
     },
