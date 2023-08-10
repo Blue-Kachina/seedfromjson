@@ -6,7 +6,7 @@ This package makes it easy to have your DB seeded from JSON files.
 JSON files are expected to be named like the tables they contain the data for.
 This library was created mainly because of how easy it is to create JSON files from within the PHPStorm IDE
 
-It supports PHP 7+
+It supports PHP 7.3+
 
 - [Installation](#installation)
 - [Configuration](#configuration)
