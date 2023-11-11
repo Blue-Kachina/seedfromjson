@@ -11,6 +11,7 @@ namespace bluekachina\seedfromjson;
 use DB;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use JsonMachine\Items;
 use JsonMachine\JsonDecoder\ExtJsonDecoder;
@@ -72,8 +73,11 @@ class SeedFromJSON
     }
 
     // This will initiate the seeding process for all of the items that have been added to queue via addModelToSeedingQueue() function calls
-    public function beginSeeding()
+    public function beginSeeding($defer=false)
     {
+        if ($defer) {
+            return;
+        }
         $time_begin = hrtime(true);
         $this->drawHeaderToConsole();
 
@@ -116,15 +120,7 @@ class SeedFromJSON
                         Schema::disableForeignKeyConstraints();
                     }
 
-                    // ToDo: Callbacks are not yet functional
-                    if (isset($queueItem['callback_pre'])) {
-                        try {
-                            call_user_func($queueItem['callback_pre'], $scrubbed_data);
-                        } catch (Exception $e) {
-                            $this->writeToScreen(array("FAILURE", "Unable To Run Callback Pre"), "error");
-                            die();
-                        }
-                    }
+                    $this->queueItem_Callback_Pre($queueItem, $scrubbed_data);
 
                     // Actually Insert The Data
                     $quick = config('seedfromjson.ENABLE_QUICK_SEEDING');
@@ -134,15 +130,7 @@ class SeedFromJSON
                         }
                     }
 
-                    // ToDo: Callbacks are not yet functional
-                    if (isset($queueItem['callback_post'])) {
-                        try {
-                            call_user_func($queueItem['callback_post'], $scrubbed_data);
-                        } catch (Exception $e) {
-                            $this->writeToScreen(array("FAILURE", "Unable To Run Callback Post"), "error");
-                            die();
-                        }
-                    }
+                    $this->queueItem_Callback_Post($queueItem, $scrubbed_data);
 
                     if (!config('seedfromjson.DISABLE_ALL_FK_CONSTRAINTS') && isFlagSet($queueItem, OPT_DISABLE_FK_CONSTRAINTS)) {
                         Schema::enableForeignKeyConstraints();
@@ -175,7 +163,8 @@ class SeedFromJSON
         if (isFlagSet($queueItem, OPT_TRUNCATE_TABLE)) {
             Model::unguard();
             try {
-                DB::table($queueItem['table'])->delete();
+//                DB::table($queueItem['table'])->delete();
+                DB::table($queueItem['table'])->truncate();
                 $this->writeToScreen("SUCCESS", "success");
             } catch (Exception $e) {
                 $this->writeToScreen(array("FAILURE", "Unable To Truncate Table"), "warning");
@@ -184,6 +173,50 @@ class SeedFromJSON
             Model::reguard();
         } else {
             $this->writeToScreen("SKIPPED", "warning");
+        }
+    }
+
+    // This function will get invoked by the beginSeeding() function
+    private function queueItem_Callback_Pre($queueItem, $data = null)
+    {
+        if (!isset($queueItem['callback_pre']) || !is_callable($queueItem['callback_pre'])) {
+            return;
+        }
+        $this->writeToScreen("\n");
+        $message = padStringWithDots("PRESCRIPT:  {$queueItem['table']}");
+        $this->_output->write($message);
+        $this->writeToScreen("STARTED", "success");
+        try {
+            $queueItem['callback_pre']($data);
+            $message = padStringWithDots("PRESCRIPT:  {$queueItem['table']}");
+            $this->_output->write($message);
+            $this->writeToScreen("SUCCESS", "success");
+            $this->writeToScreen("\n");
+        } catch (\RuntimeException $ex) {
+            $this->writeToScreen(array("FAILURE", "Unable To Complete Callback (Pre) - {$ex->getMessage()}" ), "error");
+            Log::error($ex->getMessage());
+            die();
+        }
+    }
+    private function queueItem_Callback_Post($queueItem, $data = null)
+    {
+        if (!isset($queueItem['callback_post']) || !is_callable($queueItem['callback_post'])) {
+            return null;
+        }
+        $this->writeToScreen("\n");
+        $message = padStringWithDots("POSTSCRIPT: {$queueItem['table']}");
+        $this->_output->write($message);
+        $this->writeToScreen("STARTED", "success");
+        try {
+            $queueItem['callback_post']($data);
+            $message = padStringWithDots("POSTSCRIPT: {$queueItem['table']}");
+            $this->_output->write($message);
+            $this->writeToScreen("SUCCESS", "success");
+            $this->writeToScreen("\n");
+        } catch (\RuntimeException $ex) {
+            $this->writeToScreen(array("FAILURE", "Unable To Complete Callback (Post) - {$ex->getMessage()}" ), "error");
+            Log::error($ex->getMessage());
+            die();
         }
     }
 

@@ -14,6 +14,9 @@ class SeedFromJSONProvider extends ServiceProvider
     public function register()
     {
         //$this->app->make('bluekachina\seedfromjson\SeedFromJSON.php');
+        $this->app->singleton(SeedFromJSON::class, function ($app) {
+            return new SeedFromJSON();
+        });
         $configPath = __DIR__ . '/config/seedfromjson.php';
         $this->mergeConfigFrom($configPath, 'seedfromjson');
     }
