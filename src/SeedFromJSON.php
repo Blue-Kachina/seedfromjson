@@ -10,6 +10,7 @@ namespace bluekachina\seedfromjson;
 
 use DB;
 use Exception;
+use Illuminate\Console\OutputStyle;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -17,6 +18,7 @@ use JsonMachine\Items;
 use JsonMachine\JsonDecoder\ExtJsonDecoder;
 use Storage;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
+use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
 // These are options.  You can use these constants (bitwise), so that multiple options can be used simultaneously
@@ -125,7 +127,7 @@ class SeedFromJSON
 
                     // Create a progress bar for user feedback
                     $progressbar = $this->_output->createProgressBar(100);
-                    $progressbar->setFormat("%message%\n [%bar%] %percent:3s%%      ");
+                    $progressbar->setFormat("%message%\n         [%bar%] %percent:3s%%      ");
                     $progressbar->setMessage("SEED:       {$queueItem['table']}");
                     $progressbar->setProgressCharacter("%");
                     $progressbar->start();
