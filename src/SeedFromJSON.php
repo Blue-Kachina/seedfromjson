@@ -139,7 +139,6 @@ class SeedFromJSON
                             $queueItem['instance']::insert($scrubbed_chunk_data);
                         }
                         $file_percentage = intval($scrubbed_data->getPosition() / $file_size * 100);
-                        Log::debug($file_percentage);
                         $progressbar->setProgress($file_percentage);
                     }
                     $progressbar->finish();
