@@ -41,7 +41,7 @@ class SeedFromJSON
     {
         // Initialize properties to be used by trait methods
         $this->_seedingQueue = [];                  // This is the array that we'll be putting queued jobs into
-        $this->_output = new ConsoleOutput();       // This is our output
+        $this->_output = new OutputStyle(new ArgvInput(), new ConsoleOutput());
 
         // Configure a storage object
         $this->_storage = Storage::disk(config('seedfromjson.STORAGE_FOLDER_NAME'));   // This is a storage container pointing to the directory where the JSON files reside
@@ -112,7 +112,8 @@ class SeedFromJSON
             if ($this->_storage->exists($queueItem['filename'])) {
                 $file = $this->_storage->get($queueItem['filename']);
                 $file_path = Storage::disk(config('seedfromjson.STORAGE_FOLDER_NAME'))->path($queueItem['filename']);
-                $data = Items::fromFile($file_path, ['decoder' => new ExtJsonDecoder(true)]);
+                $file_size = filesize($file_path);
+                $data = Items::fromFile($file_path, ['decoder' => new ExtJsonDecoder(true), 'debug' => true]);
                 $scrubbed_data = $this->prepDataForImport($queueItem, $data);
 
                 try {
@@ -122,13 +123,24 @@ class SeedFromJSON
 
                     $this->queueItem_Callback_Pre($queueItem, $scrubbed_data);
 
+                    // Create a progress bar for user feedback
+                    $progressbar = $this->_output->createProgressBar(100);
+                    $progressbar->setFormat("%message%\n [%bar%] %percent:3s%%      ");
+                    $progressbar->setMessage("SEED:       {$queueItem['table']}");
+                    $progressbar->setProgressCharacter("%");
+                    $progressbar->start();
+
                     // Actually Insert The Data
                     $quick = config('seedfromjson.ENABLE_QUICK_SEEDING');
                     foreach ($scrubbed_data as $scrubbed_chunk_data_index => $scrubbed_chunk_data) {
                         if (!$quick || ($quick && $scrubbed_chunk_data_index < config('seedfromjson.NUM_QUICK_RECORDS')) || isFlagSet($queueItem, OPT_ALWAYS_FULL_SEED)){
                             $queueItem['instance']::insert($scrubbed_chunk_data);
                         }
+                        $file_percentage = intval($scrubbed_data->getPosition() / $file_size * 100);
+                        Log::debug($file_percentage);
+                        $progressbar->setProgress($file_percentage);
                     }
+                    $progressbar->finish();
 
                     $this->queueItem_Callback_Post($queueItem, $scrubbed_data);
 
